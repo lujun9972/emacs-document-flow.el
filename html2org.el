@@ -1,5 +1,5 @@
 (defun html2org-get-dom (&optional url)
-  (let* ((url (or url (read-string "输入url")))
+  (let* ((url (or url (read-string "输入url: ")))
          (buf (url-retrieve-synchronously url)))
     (prog1 (ignore-errors (with-current-buffer buf
                             (goto-char url-http-end-of-headers)
@@ -15,8 +15,6 @@
   (let* ((ignore-tags (or ignore-tags '(script style comment)))
          (tag (car dom))
          (attrs (cadr dom))
-         ;; (subdoms (remove-if #'stringp  (cddr dom)))
-         ;; (text (string-trim (string-join (remove-if-not #'stringp (cddr dom)) " ")))
          (subdoms (cddr dom))
          (tag-transformers (assoc-string tag transformers-alist))
          (tag-start-transformer (or (second tag-transformers)
