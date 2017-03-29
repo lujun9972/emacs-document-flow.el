@@ -29,7 +29,9 @@
       (concat (html2org-funcall tag-start-transformer attrs)
               (mapconcat (lambda (dom)
                            (if (stringp dom)
-                               (html2org-funcall tag-data-transformer attrs dom) 
+                               (if (functionp tag-data-transformer)
+                                   (funcall tag-data-transformer attrs dom)
+                                 dom)
                              (html2org-transform-dom dom))) subdoms "")
               (html2org-funcall tag-end-transformer attrs)))))
 
@@ -66,17 +68,14 @@
                  "hidden")
     (cdr (assoc-string 'value attrs))))
 
-(defun html2org--span-data-transformer (attrs text)
-  text)
-
 (defun html2org--div-data-transformer (attrs text)
   text)
 
 (defun html2org--li-data-transformer (attrs text)
   (format "\n+ %s" text))
 
-(defun html2org--code-data-transformer (attrs text)
-  text)
+;; (defun html2org--code-data-transformer (attrs text)
+;;   text)
 
 (defun html2org--h1-data-transformer (attrs text)
   (format "* %s\n" (string-trim text)))
@@ -89,7 +88,7 @@
 
 ;; (setq dom (html2org-get-dom "http://www.baidu.com"))
 
-;; (setq dom (html2org-get-dom "http://nullprogram.com/blog/2014/10/21/"))
+(setq dom (html2org-get-dom "http://nullprogram.com/blog/2014/10/21/"))
 
 (with-current-buffer (get-buffer-create "*test*")
   (erase-buffer)
