@@ -88,9 +88,11 @@
 
 ;; (setq dom (html2org-get-dom "http://www.baidu.com"))
 
-(setq dom (html2org-get-dom "http://nullprogram.com/blog/2014/10/21/"))
+;; (setq dom (html2org-get-dom "http://nullprogram.com/blog/2014/10/21/"))
 
-(with-current-buffer (get-buffer-create "*test*")
-  (erase-buffer)
-  (insert (html2org-transform-dom dom))
-  (org-mode))
+;; (with-current-buffer (get-buffer-create "*test*")
+;;   (erase-buffer)
+;;   (insert (html2org-transform-dom dom))
+;;   (org-mode))
+
+(provide 'html2org)
