@@ -3,7 +3,7 @@
          (buf (url-retrieve-synchronously url)))
     (prog1 (ignore-errors (with-current-buffer buf
                             (goto-char url-http-end-of-headers)
-                            (libxml-parse-html-region (point) (point-max) nil t)))
+                            (libxml-parse-html-region (point) (point-max) url t)))
       (kill-buffer buf))))
 
 (defun html2org-funcall (fn &rest args)
@@ -31,7 +31,7 @@
                            (if (stringp dom)
                                (if (functionp tag-data-transformer)
                                    (funcall tag-data-transformer attrs dom)
-                                 dom)
+                                 (replace-regexp-in-string "^[\r\n]+$" "\n" dom))
                              (html2org-transform-dom dom))) subdoms "")
               (html2org-funcall tag-end-transformer attrs)))))
 
@@ -92,4 +92,5 @@
 
 (with-current-buffer (get-buffer-create "*test*")
   (erase-buffer)
-  (insert (html2org-transform-dom dom)))
+  (insert (html2org-transform-dom dom))
+  (org-mode))
