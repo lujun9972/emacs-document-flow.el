@@ -6,83 +6,61 @@
                             (libxml-parse-html-region (point) (point-max) url t)))
       (kill-buffer buf))))
 
-(defun html2org-funcall (fn &rest args)
-  (if (functionp fn)
-      (apply fn args)
-    ""))
-
-(defun html2org-transform-dom (dom &optional transformers-alist ignore-tags)
+(defun html2org-transform-dom (dom &optional start-tag-handler data-handler end-tag-handler ignore-tags)
   (let* ((ignore-tags (or ignore-tags '(script style comment)))
          (tag (car dom))
          (attrs (cadr dom))
          (subdoms (cddr dom))
-         (tag-transformers (assoc-string tag transformers-alist))
-         (tag-start-transformer (or (second tag-transformers)
-                              (intern (format "html2org--%s-start-transformer" tag))))
-         (tag-data-transformer (or (third tag-transformers)
-                              (intern (format "html2org--%s-data-transformer" tag))))
-         (tag-end-transformer (or (fourth tag-transformers)
-                              (intern (format "html2org--%s-end-transformer" tag)))))
+         (start-tag-handler (or start-tag-handler
+                                #'html2org-default-start-tag-handler))
+         (data-handler (or data-handler
+                           #'html2org-default-data-handler))
+         (end-tag-handler (or end-tag-handler
+                              #'html2org-default-end-tag-handler)))
     (unless (member tag ignore-tags)
-      (concat (html2org-funcall tag-start-transformer attrs)
+      (concat (funcall start-tag-handler tag attrs)
               (mapconcat (lambda (dom)
                            (if (stringp dom)
-                               (if (functionp tag-data-transformer)
-                                   (funcall tag-data-transformer attrs dom)
-                                 (replace-regexp-in-string "^[\r\n]+$" "\n" dom))
-                             (html2org-transform-dom dom))) subdoms "")
-              (html2org-funcall tag-end-transformer attrs)))))
+                               (funcall data-handler tag attrs dom)
+                             (html2org-transform-dom dom
+                                                     start-tag-handler
+                                                     data-handler
+                                                     end-tag-handler
+                                                     ignore-tags)))
+                         subdoms "")
+              (funcall end-tag-handler tag attrs)))))
 
-(defun html2org--title-data-transformer (attrs text)
-  (format "#+URL: %s\n" (string-trim text)))
+
+(defun html2org--extract-attr (attr-alist attr)
+  (cdr (assoc-string attr attr-alist)))
+
+(defun html2org-default-start-tag-handler (tag attrs)
+  (cl-case tag
+    (b "\n")
+    (p "\n\n")
+    (a (format "[[%s][" (html2org--extract-attr attrs 'href)))
+    (t "")))
+
+(defun html2org-default-end-tag-handler (tag attrs)
+  (cl-case tag
+    ;; (b "\n")
+    (p "\n\n")
+    (a "]]")
+    (t  "")))
 
 
-(defun html2org--b-before-transformer (attrs)
-  "\n")
-(defun html2org--b-data-transformer (attrs text)
-  text)
-(defun html2org--b-end-transformer (attrs)
-  "\n")
+(defun html2org-default-data-handler (tag attrs text)
+  (cl-case tag
+    (title (format "#+URL: %s\n" (string-trim text)))
+    (img (format "[[%s]]" (html2org--extract-attr attrs 'src)))
+    (input (unless (equal (cdr (assoc-string 'type attrs))
+                          "hidden")
+             (html2org--extract-attr attrs 'value)))
+    (li (format "\n+ %s" text))
+    ((h1 h2 h3 h4 h5) (string-trim text))
+    (t (replace-regexp-in-string "[\r\n]+" "\n" text))))
 
-(defun html2org--p-before-transformer (attrs)
-  "\n\n")
-(defun html2org--p-data-transformer (attrs text)
-  text)
-(defun html2org--p-end-transformer (attrs)
-  "\n\n")
 
-(defun html2org--img-data-transformer (attrs text)
-  (format "[[%s]]" (cdr (assoc-string 'src attrs))))
-
-(defun html2org--a-start-transformer (attrs)
-  (format "[[%s][" (cdr (assoc-string 'href attrs))))
-(defun html2org--a-data-transformer (attrs text)
-  text)
-(defun html2org--a-end-transformer (attrs)
-  (format "]]" (cdr (assoc-string 'href attrs))))
-
-(defun html2org--input-data-transformer (attrs text)
-  (unless (equal (cdr (assoc-string 'type attrs))
-                 "hidden")
-    (cdr (assoc-string 'value attrs))))
-
-(defun html2org--div-data-transformer (attrs text)
-  text)
-
-(defun html2org--li-data-transformer (attrs text)
-  (format "\n+ %s" text))
-
-;; (defun html2org--code-data-transformer (attrs text)
-;;   text)
-
-(defun html2org--h1-data-transformer (attrs text)
-  (format "* %s\n" (string-trim text)))
-
-(defun html2org--h2-data-transformer (attrs text)
-  (format "** %s\n" (string-trim text)))
-
-(defun html2org--h3-data-transformer (attrs text)
-  (format "*** %s\n" (string-trim text)))
 
 ;; (setq dom (html2org-get-dom "http://www.baidu.com"))
 
