@@ -71,4 +71,8 @@
 ;;   (insert (html2org-transform-dom dom))
 ;;   (org-mode))
 
+(defun html2org (&optional url)
+  (let ((dom (html2org-get-dom url)))
+    (html2org-transform-dom dom)))
+
 (provide 'html2org)
