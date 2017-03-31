@@ -70,8 +70,10 @@
 
 将当前文件从raw目录移动到其他目录中"
   (interactive)
-  (let ((current-file (buffer-file-name))
+  (let ((default-directory emacs-document-directory)
+        (current-file (buffer-file-name))
         (new-file (read-file-name "Moved to: " emacs-document-directory)))
-    (rename-file current-file new-file)
-    (kill-buffer)
-    (vc-dir emacs-document-directory)))
+    (vc-git-rename-file current-file new-file)
+    (vc-git-checkin (list current-file new-file) "change category")
+    (vc-git-push)
+    (kill-buffer)))
