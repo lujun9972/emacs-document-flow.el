@@ -51,7 +51,7 @@
 
 (defun html2org-default-data-handler (tag attrs text)
   (cl-case tag
-    (title (format "#+URL: %s\n" (string-trim text)))
+    (title (format "#+TITLE: %s\n" (string-trim text)))
     (img (format "[[%s]]" (html2org--extract-attr attrs 'src)))
     (input (unless (equal (cdr (assoc-string 'type attrs))
                           "hidden")
