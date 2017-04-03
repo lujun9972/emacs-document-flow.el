@@ -24,7 +24,7 @@
   (let* ((default-directory emacs-document-directory)
          (dom (html2org-get-dom))
          (org-content (html2org-transform-dom dom))
-         (org-title (progn (string-match "#\\+URL: \\([^\n]+\\)" org-content)
+         (org-title (progn (string-match "#\\+TITLE: \\([^\n]+\\)" org-content)
                            (match-string-no-properties 1 org-content)))
          (org-file (expand-file-name (concat org-title ".org") (emacs-document-raw-directory))))
     (with-temp-file org-file
