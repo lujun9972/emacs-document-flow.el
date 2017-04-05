@@ -19,23 +19,30 @@
 (defun emacs-document-update-readme ()
   (interactive)
   (let ((default-directory emacs-document-directory)
-        (readme "README.org"))
-    (message  (shell-command-to-string (format "./generate_index.sh > %s" readme)))
+        (readme (expand-file-name  "README.org" emacs-document-directory)))
+    (with-temp-file readme
+      (insert (shell-command-to-string  "./generate_index.sh")))
     (vc-git-checkin (list readme) "update README")
     (vc-git-push)))
 
-(defun emacs-document-add-new ()
+(defun emacs-document-add-new (&optional url)
   "新增一篇待翻译的文章
 
 输入url,然后转成$title.org放到raw目录下"
   (interactive)
-  (let* ((default-directory emacs-document-directory)
-         (dom (html2org-get-dom))
+  (let* ((url (or url (read-string "输入url: ")))
+         (default-directory emacs-document-directory)
+         (dom (html2org-get-dom url))
          (org-content (html2org-transform-dom dom))
          (org-title (progn (string-match "#\\+TITLE: \\([^\n]+\\)" org-content)
                            (match-string-no-properties 1 org-content)))
          (org-file (expand-file-name (concat org-title ".org") (emacs-document-raw-directory))))
     (with-temp-file org-file
+      (insert "#+URL: " url "\n")
+      (insert "#+AUTHOR: " user-login-name "\n")
+      (insert "#+DATE: " (format-time-string "[%Y-%m-%d %a %H:%M]" (current-time)) "\n")
+      (insert "#+LANGUAGE:  zh-CN\n")
+      (insert "#+OPTIONS:  H:6 num:nil toc:t \\n:nil ::t |:t ^:nil -:nil f:t *:t <:nil")
       (insert org-content))
     (vc-git-register (list org-file))
     (vc-git-checkin (list org-file) (format "add raw post %s" org-title))
