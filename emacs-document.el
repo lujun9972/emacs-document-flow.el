@@ -15,6 +15,14 @@
 (defun emacs-document-processing-directory ()
     (file-name-as-directory (expand-file-name "processing" emacs-document-directory)))
 
+(defun emacs-document-update-readme ()
+  (interactive)
+  (let ((default-directory emacs-document-directory)
+        (readme "README.org"))
+    (message  (shell-command-to-string (format "./generate_index.sh > %s" readme)))
+    (vc-git-checkin (list readme) "update README")
+    (vc-git-push)))
+
 (defun emacs-document-add-new ()
   "新增一篇待翻译的文章
 
@@ -30,7 +38,8 @@
       (insert org-content))
     (vc-git-register (list org-file))
     (vc-git-checkin (list org-file) (format "add raw post %s" org-title))
-    (vc-git-push nil)))
+    (vc-git-push nil))
+  (emacs-document-update-readme))
 
 (defun emacs-document-new-translation ()
   "开始新的翻译
