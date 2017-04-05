@@ -1,3 +1,4 @@
+(require 'cl-lib)
 (load (expand-file-name "html2org.el" (file-name-directory (or buffer-file-name
                                                  load-file-name))))
 
@@ -31,7 +32,7 @@
   (let* ((default-directory emacs-document-directory)
          (dom (html2org-get-dom))
          (org-content (html2org-transform-dom dom))
-         (org-title (progn (string-match "#\\+URL: \\([^\n]+\\)" org-content)
+         (org-title (progn (string-match "#\\+TITLE: \\([^\n]+\\)" org-content)
                            (match-string-no-properties 1 org-content)))
          (org-file (expand-file-name (concat org-title ".org") (emacs-document-raw-directory))))
     (with-temp-file org-file
@@ -69,7 +70,7 @@
 若processing目录中没有要翻译的文章,调用`emacs-document-new-translation' 开始新的翻译 "
   (interactive)
   (let* ((processing-dir (emacs-document-processing-directory))
-         (processing-files (remove-if-not #'file-regular-p (directory-files processing-dir t))))
+         (processing-files (cl-remove-if-not #'file-regular-p (directory-files processing-dir t))))
     (if processing-files
         (find-file (read-file-name "请选择要翻译的文章: " processing-dir nil t))
       (emacs-document-new-translation))))
