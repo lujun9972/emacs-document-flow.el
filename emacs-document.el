@@ -10,6 +10,16 @@
   :type 'directory
   :group 'emacs-document)
 
+(defcustom emacs-document-auto-update-readme t
+  "Non nil means update README.org automatically"
+  :type 'boolean
+  :group 'emacs-document)
+
+(defcustom emacs-document-auto-push t
+  "Non nil means push to remote repo automatically"
+  :type 'boolean
+  :group 'emacs-document)
+
 (defun emacs-document-raw-directory ()
   (file-name-as-directory (expand-file-name "raw" emacs-document-directory)))
 
@@ -22,8 +32,7 @@
         (readme (expand-file-name  "README.org" emacs-document-directory)))
     (with-temp-file readme
       (insert (shell-command-to-string  "./generate_index.sh")))
-    (vc-git-checkin (list readme) "update README")
-    (vc-git-push)))
+    (vc-git-checkin (list readme) "update README")))
 
 (defun emacs-document-add-new (&optional url)
   "新增一篇待翻译的文章
@@ -46,8 +55,10 @@
       (insert org-content))
     (vc-git-register (list org-file))
     (vc-git-checkin (list org-file) (format "add raw post %s" org-title))
-    (vc-git-push nil))
-  (emacs-document-update-readme))
+    (when emacs-document-auto-update-readme
+      (emacs-document-update-readme))
+    (when emacs-document-auto-push
+      (vc-git-push nil))))
 
 (defun emacs-document-new-translation ()
   "开始新的翻译
@@ -65,7 +76,10 @@
       (rename-file raw-file process-file)
       (vc-git-register (list process-file)))
     (vc-git-checkin (list raw-file process-file) (format "processing post %s" filename))
-    (vc-git-push nil)
+    (when emacs-document-auto-update-readme
+      (emacs-document-update-readme))
+    (when emacs-document-auto-push
+      (vc-git-push nil)) 
     (find-file process-file)))
 
 (vc-registered "~/github/emacs-document/raw/literate-devops.org")
@@ -92,5 +106,8 @@
         (new-file (read-file-name "Moved to: " emacs-document-directory)))
     (vc-git-rename-file current-file new-file)
     (vc-git-checkin (list current-file new-file) "change category")
-    (vc-git-push)
+    (when emacs-document-auto-update-readme
+      (emacs-document-update-readme))
+    (when emacs-document-auto-push
+      (vc-git-push nil))
     (kill-buffer)))
