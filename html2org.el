@@ -15,7 +15,7 @@
   :type 'number)
 
 (defun html2org-get-dom (&optional url)
-  "Retrive `URL' and return the dom"
+  "Retrive `URL' and return the dom."
   (let* ((url (or url (read-string "url: ")))
          (buf (with-timeout
                   (html2org-timeout
@@ -27,6 +27,7 @@
       (kill-buffer buf))))
 
 (defun html2org-tag-a (dom)
+  "Convert DOM into org-mode style link."
   (let ((url (dom-attr dom 'href))
         (title (dom-attr dom 'title))
         (text (dom-texts dom))
@@ -45,7 +46,7 @@
         (insert (format "[[%s][%s]]" url description))))))
 
 (defun html2org-transform-dom (dom)
-  "Transform `DOM' into org file content"
+  "Transform DOM into org file content."
   (let ((shr-external-rendering-functions '((a . html2org-tag-a))))
     (with-temp-buffer
       (shr-insert-document dom)
@@ -53,7 +54,7 @@
 
 ;;;###autoload
 (defun html2org (&optional url org-file)
-  "Retrive `URL' and write the content into `ORG-FILE' using org format"
+  "Retrive URL and write the content into ORG-FILE with org-mode style links."
   (interactive)
   (let* ((url (or url (read-string "url: ")))
          (dom (html2org-get-dom url))
