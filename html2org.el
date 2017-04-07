@@ -1,6 +1,7 @@
 ;; -*- lexical-binding: t; -*-
 (require 'dom)
 (require 'shr)
+(require 'subr-x)
 
 (defgroup html2org nil
   "Save http(s) page as org file")
@@ -28,6 +29,7 @@
 (defun html2org-tag-a (dom)
   (let ((url (dom-attr dom 'href))
         (title (dom-attr dom 'title))
+        (text (dom-texts dom))
         (start (point)))
     (when (and shr-target-id
                (equal (dom-attr dom 'name) shr-target-id))
@@ -37,9 +39,10 @@
         (shr-ensure-newline)
         (insert " "))
       (put-text-property start (1+ start) 'shr-target-id shr-target-id))
-    (if title
-        (insert (format "[[%s][%s]]" url title))
-      (insert (format "[[%s]]" url)))))
+    (let ((description (or title text)))
+      (if (string-empty-p (string-trim description))
+          (insert (format "[[%s]]" url))
+        (insert (format "[[%s][%s]]" url description))))))
 
 (defun html2org-transform-dom (dom)
   "Transform `DOM' into org file content"
