@@ -54,7 +54,9 @@
 
 ;;;###autoload
 (defun html2org (&optional url org-file)
-  "Retrive URL and write the content into ORG-FILE with org-mode style links."
+  "Retrive URL and write the content into ORG-FILE with org-mode style links.
+
+This function will return the saved ORG-FILE path"
   (interactive)
   (let* ((url (or url (read-string "url: ")))
          (dom (html2org-get-dom url))
@@ -68,7 +70,8 @@
       (insert "#+TAGS: \n")
       (insert "#+DATE: " (format-time-string "[%Y-%m-%d %a %H:%M]" (current-time)) "\n")
       (insert "#+LANGUAGE:  \n")
-      (insert "#+OPTIONS:  H:6 num:nil toc:t \\n:nil ::t |:t ^:nil -:nil f:t *:t <:nil")
-      (insert content))))
+      (insert "#+OPTIONS:  H:6 num:nil toc:t \\n:nil ::t |:t ^:nil -:nil f:t *:t <:nil\n")
+      (insert content))
+    org-file))
 
 (provide 'html2org)
