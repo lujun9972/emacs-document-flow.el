@@ -82,8 +82,6 @@
       (vc-git-push nil)) 
     (find-file process-file)))
 
-(vc-registered "~/github/emacs-document/raw/literate-devops.org")
-
 (defun emacs-document-start-translation ()
   "开始翻译
 
