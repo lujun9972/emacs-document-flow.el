@@ -1,6 +1,7 @@
 (require 'cl-lib)
-(load (expand-file-name "html2org.el" (file-name-directory (or buffer-file-name
-                                                 load-file-name))))
+(require 'html2org)
+;; (load (expand-file-name "html2org.el" (file-name-directory (or buffer-file-name
+;;                                                  load-file-name))))
 
 (defgroup emacs-document nil
   "Group for emacs-document.")
@@ -26,6 +27,18 @@
 (defun emacs-document-processing-directory ()
     (file-name-as-directory (expand-file-name "processing" emacs-document-directory)))
 
+(defun emacs-document-update-org-option (option value)
+  "更新当前buffer中org文件的metadata,将OPTION对应的值更像为VALUE.
+
+该函数会返回OPTION原始的值"
+  (save-excursion
+    (goto-char (point-min))
+    (let* ((regexp (org-make-options-regexp (list option)))
+           (origin-value (progn (re-search-forward regexp)
+                                (match-string 2))))
+      (replace-match value t t nil 2)
+      origin-value)))
+
 (defun emacs-document-update-readme ()
   (interactive)
   (let ((default-directory emacs-document-directory)
@@ -41,20 +54,16 @@
   (interactive)
   (let* ((url (or url (read-string "输入url: ")))
          (default-directory emacs-document-directory)
-         (dom (html2org-get-dom url))
-         (org-content (html2org-transform-dom dom))
-         (org-title (progn (string-match "#\\+TITLE: \\([^\n]+\\)" org-content)
-                           (match-string-no-properties 1 org-content)))
-         (org-file (expand-file-name (concat org-title ".org") (emacs-document-raw-directory))))
-    (with-temp-file org-file
-      (insert "#+URL: " url "\n")
-      (insert "#+AUTHOR: " user-login-name "\n")
-      (insert "#+DATE: " (format-time-string "[%Y-%m-%d %a %H:%M]" (current-time)) "\n")
-      (insert "#+LANGUAGE:  zh-CN\n")
-      (insert "#+OPTIONS:  H:6 num:nil toc:t \\n:nil ::t |:t ^:nil -:nil f:t *:t <:nil")
-      (insert org-content))
+         (html2org-store-dir (emacs-document-raw-directory))
+         (org-file (html2org url nil
+                             :URL url
+                             :AUTHOR user-login-name
+                             :DATE (format-time-string "[%Y-%m-%d %a %H:%M]" (current-time))
+                             :TAGS "raw"
+                             :LANGUAGE "zh-CN"
+                             :OPTIONS "H:6 num:nil toc:t \\n:nil ::t |:t ^:nil -:nil f:t *:t <:nil")))
     (vc-git-register (list org-file))
-    (vc-git-checkin (list org-file) (format "add raw post %s" org-title))
+    (vc-git-checkin (list org-file) (format "add raw post %s" url))
     (when emacs-document-auto-update-readme
       (emacs-document-update-readme))
     (when emacs-document-auto-push
@@ -75,12 +84,14 @@
         (vc-git-rename-file raw-file process-file)
       (rename-file raw-file process-file)
       (vc-git-register (list process-file)))
+    (find-file process-file)
+    (emacs-document-update-org-option "TAGS" "processing")
+    (save-buffer)
     (vc-git-checkin (list raw-file process-file) (format "processing post %s" filename))
     (when emacs-document-auto-update-readme
       (emacs-document-update-readme))
     (when emacs-document-auto-push
-      (vc-git-push nil)) 
-    (find-file process-file)))
+      (vc-git-push nil))))
 
 (defun emacs-document-start-translation ()
   "开始翻译
@@ -99,9 +110,15 @@
 
 将当前文件从raw目录移动到其他目录中"
   (interactive)
-  (let ((default-directory emacs-document-directory)
-        (current-file (buffer-file-name))
-        (new-file (read-file-name "Moved to: " emacs-document-directory)))
+  (let* ((default-directory emacs-document-directory)
+         (current-file (buffer-file-name))
+         (new-file (read-file-name "Moved to: " (file-name-as-directory emacs-document-directory)))
+         (new-category (file-relative-name (file-name-directory new-file)))
+         (new-name (file-name-base new-file)))
+    (emacs-document-update-org-option "TITLE" new-name)
+    (emacs-document-update-org-option "TAGS" new-category)
+    (emacs-document-update-org-option "DATE" (format-time-string "[%Y-%m-%d %a %H:%M]" (current-time)))
+    (save-buffer)
     (vc-git-rename-file current-file new-file)
     (vc-git-checkin (list current-file new-file) "change category")
     (when emacs-document-auto-update-readme
