@@ -1,7 +1,5 @@
 (require 'cl-lib)
-(require 'html2org)
-;; (load (expand-file-name "html2org.el" (file-name-directory (or buffer-file-name
-;;                                                  load-file-name))))
+(require 'url2orgfile)
 
 (defgroup emacs-document nil
   "Group for emacs-document.")
@@ -47,15 +45,19 @@
       (insert (shell-command-to-string  "./generate_index.sh")))
     (vc-git-checkin (list readme) "update README")))
 
-(defun emacs-document-add-new (&optional url)
+(defun emacs-document-add-raw (&optional url)
   "新增一篇待翻译的文章
 
 输入url,然后转成$title.org放到raw目录下"
   (interactive)
-  (let* ((url (or url (read-string "输入url: ")))
+  (let* ((url (or url (read-string "输入url: " (cond ((eq major-mode 'eww-mode)
+                                                      (eww-current-url))
+                                                     ((eq major-mode 'w3m-mode)
+                                                      w3m-current-url)
+                                                     (t "")))))
          (default-directory emacs-document-directory)
-         (html2org-store-dir (emacs-document-raw-directory))
-         (org-file (html2org url nil
+         (url2orgfile-store-dir (emacs-document-raw-directory))
+         (org-file (url2orgfile url nil
                              :URL url
                              :AUTHOR user-login-name
                              :DATE (format-time-string "[%Y-%m-%d %a %H:%M]" (current-time))
@@ -72,8 +74,7 @@
 (defun emacs-document-new-translation ()
   "开始新的翻译
 
-从raw目录中挑选一篇文章放到processing目录下,然后打开这篇文章开始翻译
-若raw目录中也没有待翻译的文章,调用`emacs-document-new' 新增一篇待翻译的文章,然后再调用`emacs-document-new-translation' 开始翻译"
+从raw目录中挑选一篇文章放到processing目录下,然后打开这篇文章开始翻译."
   (interactive)
   (let* ((default-directory emacs-document-directory)
          (raw-directory (emacs-document-raw-directory))
@@ -93,11 +94,10 @@
     (when emacs-document-auto-push
       (vc-git-push nil))))
 
-(defun emacs-document-start-translation ()
+(defun emacs-document-continue-translation ()
   "开始翻译
 
-从processing目录中选择一篇文章开始翻译
-若processing目录中没有要翻译的文章,调用`emacs-document-new-translation' 开始新的翻译 "
+从processing目录中选择一篇文章开始翻译."
   (interactive)
   (let* ((processing-dir (emacs-document-processing-directory))
          (processing-files (cl-remove-if-not #'file-regular-p (directory-files processing-dir t))))
